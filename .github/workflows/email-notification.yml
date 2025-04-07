@@ -8,6 +8,8 @@ jobs:
     runs-on: self-hosted
     outputs:
       reason: ${{ steps.set-failure-reason.outputs.reason }}
+      upload_url: ${{ steps.upload.outputs.upload_url }}
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -21,7 +23,8 @@ jobs:
       run: |
         curl -k -u ${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASSWORD }} \
           -T ./main "https://192.168.27.95/artifactory/example-repo-local/"
-        echo "upload_url=https://192.168.27.95/artifactory/example-repo-local/main" >> "$GITHUB_OUTPUT"
+        echo "upload_url=https://192.168.27.95/artifactory/example-repo-local" >> "$GITHUB_OUTPUT"
+      
 
     - name: Set failure reason
       id: set-failure-reason
