@@ -14,7 +14,7 @@ jobs:
 
     - name: Compile the program
       id: compile
-      run: make
+      run: makes
 
     - name: Upload artifact to JFrog Artifactory
       id: upload
