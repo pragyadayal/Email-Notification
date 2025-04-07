@@ -21,6 +21,7 @@ jobs:
       run: |
         curl -k -u ${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASSWORD }} \
           -T ./main "https://192.168.27.95/artifactory/example-repo-local/"
+        echo "upload_url=https://192.168.27.95/artifactory/example-repo-local/main" >> "$GITHUB_OUTPUT"
 
     - name: Set failure reason
       id: set-failure-reason
@@ -57,6 +58,7 @@ jobs:
             🌿 Branch: ${{ github.ref_name }}
             💬 Commit ID: ${{ github.sha }}
             🧑‍💻 Triggered by: ${{ github.actor }}
+            📤 Artifact uploaded to: ${{ needs.build.outputs.upload_url }}
             🔗 Check Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
   notify-failure:
