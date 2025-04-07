@@ -6,45 +6,38 @@ on:
 jobs:
   build:
     runs-on: self-hosted
-
+    outputs:
+      reason: ${{ steps.set-failure-reason.outputs.reason }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set default failure message
-      id: failure_info
-      run: echo "job_reason=Unknown failure" >> "$GITHUB_OUTPUT"
-
     - name: Compile the program
       id: compile
       run: make
-      continue-on-error: true
-
-    - name: Set compile failure reason
-      if: steps.compile.outcome == 'failure'
-      run: echo "job_reason=Compilation Failure" >> "$GITHUB_OUTPUT"
 
     - name: Upload artifact to JFrog Artifactory
       id: upload
-      if: steps.compile.outcome == 'success'
       run: |
         curl -u ${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASSWORD }} \
           -T ./main "https://192.168.27.95/artifactory/example-repo-local/"
-      continue-on-error: true
 
-    - name: Set JFrog failure reason
-      if: steps.upload.outcome == 'failure'
+    - name: Set failure reason
+      id: set-failure-reason
+      if: failure()
       run: |
-        echo "job_reason=Upload Failure to JFrog Artifactory at https://192.168.27.95/artifactory/example-repo-local/" >> "$GITHUB_OUTPUT"
-
-    - name: Export job reason for other jobs
-      run: echo "JOB_REASON=${{ steps.failure_info.outputs.job_reason }}" >> $GITHUB_ENV
+        if [ "${{ steps.compile.outcome }}" == "failure" ]; then
+          echo "reason=Compilation Failure" >> "$GITHUB_OUTPUT"
+        elif [ "${{ steps.upload.outcome }}" == "failure" ]; then
+          echo "reason=Upload Failure to JFrog Artifactory at https://192.168.27.95/artifactory/example-repo-local/" >> "$GITHUB_OUTPUT"
+        else
+          echo "reason=Unknown Failure" >> "$GITHUB_OUTPUT"
+        fi
 
   notify-success:
     needs: build
     if: success()
     runs-on: self-hosted
-
     steps:
     - name: Send Success Email
       uses: dawidd6/action-send-mail@v3
@@ -53,24 +46,23 @@ jobs:
         server_port: 587
         username: ${{ secrets.EMAIL_FROM }}
         password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: "✅ SUCCESS: ${{ github.repository }} on ${{ github.ref_name }}"
+        subject:  "✅ SUCCESS: ${{ github.repository }} on ${{ github.ref_name }}"
         to: ${{ secrets.EMAIL_TO }}
         from: ${{ secrets.EMAIL_FROM }}
         body: |
-          ✅ Build Succeeded!
+            ✅ Build Succeeded!
 
-          🔧 Job: build
-          📦 Repository: ${{ github.repository }}
-          🌿 Branch: ${{ github.ref_name }}
-          💬 Commit ID: ${{ github.sha }}
-          🧑‍💻 Triggered by: ${{ github.actor }}
-          🔗 Check Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            🔧 Job: build
+            📦 Repository: ${{ github.repository }}
+            🌿 Branch: ${{ github.ref_name }}
+            💬 Commit ID: ${{ github.sha }}
+            🧑‍💻 Triggered by: ${{ github.actor }}
+            🔗 Check Logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
   notify-failure:
     needs: build
     if: failure()
     runs-on: self-hosted
-
     steps:
     - name: Send Failure Email
       uses: dawidd6/action-send-mail@v3
@@ -84,7 +76,7 @@ jobs:
         from: ${{ secrets.EMAIL_FROM }}
         body: |
           ❗ Build Failed
-          🔧 Job: ${{ env.JOB_REASON }}
+          🔧 Job: ${{ needs.build.outputs.reason }}
           📦 Repository: ${{ github.repository }}
           🌿 Branch: ${{ github.ref_name }}
           💬 Commit ID: ${{ github.sha }}
