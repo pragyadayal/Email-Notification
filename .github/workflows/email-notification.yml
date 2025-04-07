@@ -14,12 +14,12 @@ jobs:
 
     - name: Compile the program
       id: compile
-      run: makes
+      run: make
 
     - name: Upload artifact to JFrog Artifactory
       id: upload
       run: |
-        curl -u ${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASSWORD }} \
+        curl -k -u ${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASSWORD }} \
           -T ./main "https://192.168.27.95/artifactory/example-repo-local/"
 
     - name: Set failure reason
