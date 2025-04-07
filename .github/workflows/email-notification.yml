@@ -28,7 +28,7 @@ jobs:
       id: upload
       if: steps.compile.outcome == 'success'
       run: |
-        curl -k -u ${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASSWORD }} \
+        curl -u ${{ secrets.JFROG_USER }}:${{ secrets.JFROG_PASSWORD }} \
           -T ./main "https://192.168.27.95/artifactory/example-repo-local/"
       continue-on-error: true
 
